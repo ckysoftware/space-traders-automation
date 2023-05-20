@@ -1,6 +1,9 @@
 set(LIBRARY_NAME data_layer)
+set(spdlog_DIR ../../external/spdlog/build/)
 
 add_library(${LIBRARY_NAME})
+find_package(spdlog REQUIRED)
+find_package(fmt REQUIRED)
 
 target_sources(${LIBRARY_NAME}
     PRIVATE
@@ -17,3 +20,8 @@ target_include_directories(${LIBRARY_NAME}
     PUBLIC
         ${CMAKE_CURRENT_LIST_DIR}
 )
+
+target_link_libraries(${LIBRARY_NAME}
+    PUBLIC
+        spdlog::spdlog
+        fmt)

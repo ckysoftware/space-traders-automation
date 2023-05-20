@@ -1,6 +1,8 @@
 set(TARGET space-traders)
+set(spdlog_DIR ../external/spdlog/build/)
 
 find_package(cpprestsdk REQUIRED)
+find_package(spdlog REQUIRED)
 
 add_executable(${TARGET}
     main.cpp)
@@ -18,6 +20,7 @@ target_link_libraries(${TARGET} PUBLIC
     data_layer
     automation
     cpprest
+    spdlog::spdlog
     ssl
     crypto)
 

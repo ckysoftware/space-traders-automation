@@ -1,5 +1,7 @@
 #pragma once
 
+#include "spdlog/spdlog.h"
+
 #include "../data_layer/schema.h"
 #include "../data_layer/data_access.h"
 #include "../data_layer/error.h"
@@ -40,7 +42,7 @@ namespace automation
             bool deliverContract();
 
             void sleep(int seconds);
-            void log(const std::string &message);
+            void log(const std::string &message, spdlog::level::level_enum level = spdlog::level::info);
             void setTargetWaypoint(const std::string waypointSymbol);
 
             void handleInTransitError(const error::InTransitException &e);

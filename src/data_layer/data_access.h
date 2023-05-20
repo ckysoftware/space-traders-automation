@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cpprest/http_client.h>
+#include "spdlog/spdlog.h"
 
 #include <vector>
 
@@ -32,7 +33,7 @@ namespace dal
     private:
         web::http::client::http_client client;
         bool checkAndThrowError(const web::json::value &response);
-        void log(const std::string &message);
+        void log(const std::string &message, spdlog::level::level_enum level = spdlog::level::debug);
         web::json::value sendRequest(web::http::http_request &request, const web::json::value &body = NULL_JSON_BODY);
     };
 };

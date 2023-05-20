@@ -1,3 +1,6 @@
+#include "spdlog/spdlog.h"
+#include <fmt/core.h>
+
 #include <ctime>
 #include <thread>
 
@@ -19,7 +22,7 @@ DataAccessLayer::DataAccessLayer(std::string baseURI) : client(U(baseURI))
 
 std::vector<Ship> extractShips(json::value &response)
 {
-    json::array jsonArray = response.at(U("data")).as_array();
+    json::array jsonArray = response.as_array();
     std::vector<Ship> ships;
     for (auto jsonShip : jsonArray)
     {
@@ -36,44 +39,43 @@ std::vector<Ship> DataAccessLayer::getShips()
     request.set_request_uri(U("/my/ships"));
 
     json::value response = sendRequest(request);
-    return extractShips(response);
+    return extractShips(response.at(U("data")));
 }
 
 ExtractResponse DataAccessLayer::mine(const std::string &shipSymbol)
 {
-    log("Mining with " + shipSymbol + "...");
+    log(fmt::format("Mining with {}...", shipSymbol));
 
     http_request request(methods::POST);
     request.headers().add(U("Authorization"), U("Bearer ") + U(ACCESS_TOKEN));
     request.set_request_uri(U("/my/ships/" + shipSymbol + "/extract"));
 
     json::value response = sendRequest(request);
-    // json::value response = client.request(request).get().extract_json().get();
     checkAndThrowError(response);
 
-    log("Mined with " + shipSymbol + ".");
+    log(fmt::format("Mined with {}.", shipSymbol));
     return ExtractResponse(response.at(U("data")));
 }
 
 Cargo DataAccessLayer::getShipCargo(const std::string &shipSymbol)
 {
-    log("Getting ship cargo for " + shipSymbol + "...");
+    log(fmt::format("Getting ship cargo for {}...", shipSymbol));
 
     http_request request(methods::GET);
     request.headers().add(U("Authorization"), U("Bearer ") + U(ACCESS_TOKEN));
     request.set_request_uri(U("/my/ships/" + shipSymbol + "/cargo"));
 
     json::value response = sendRequest(request);
-    // json::value response = client.request(request).get().extract_json().get();
     checkAndThrowError(response);
 
-    log("Got ship cargo for " + shipSymbol + ".");
+    log(fmt::format("Got ship cargo for {}.", shipSymbol));
     return Cargo(response.at(U("data")));
 }
 
 SellResponse DataAccessLayer::sell(const std::string &shipSymbol, const std::string &tradeSymbol, int unit)
 {
-    log("Selling cargo for " + shipSymbol + ", " + std::to_string(unit) + "x " + tradeSymbol + "...");
+    log(fmt::format("Selling cargo for {}, {}x {}...", shipSymbol, unit, tradeSymbol));
+
     json::value payload;
     payload["symbol"] = json::value::string(tradeSymbol);
     payload["units"] = json::value::number(unit);
@@ -81,19 +83,17 @@ SellResponse DataAccessLayer::sell(const std::string &shipSymbol, const std::str
     http_request request(methods::POST);
     request.headers().add(U("Authorization"), U("Bearer ") + U(ACCESS_TOKEN));
     request.set_request_uri(U("/my/ships/" + shipSymbol + "/sell"));
-    // request.set_body(payload);
 
     json::value response = sendRequest(request, payload);
-    // json::value response = client.request(request).get().extract_json().get();
     checkAndThrowError(response);
 
-    log("Sold cargo for " + shipSymbol + ", " + std::to_string(unit) + "x " + tradeSymbol + ".");
+    log(fmt::format("Sold cargo for {}, {}x {}.", shipSymbol, unit, tradeSymbol));
     return SellResponse(response.at(U("data")));
 }
 
 NavResponse DataAccessLayer::navigate(const std::string &shipSymbol, const std::string &destinationSymbol)
 {
-    log("Navigating " + shipSymbol + " to " + destinationSymbol + "...");
+    log(fmt::format("Navigating {} to {}...", shipSymbol, destinationSymbol));
 
     json::value payload;
     payload["waypointSymbol"] = json::value::string(destinationSymbol);
@@ -101,13 +101,11 @@ NavResponse DataAccessLayer::navigate(const std::string &shipSymbol, const std::
     http_request request(methods::POST);
     request.headers().add(U("Authorization"), U("Bearer ") + U(ACCESS_TOKEN));
     request.set_request_uri(U("/my/ships/" + shipSymbol + "/navigate"));
-    // request.set_body(payload);
 
     json::value response = sendRequest(request, payload);
-    // json::value response = client.request(request).get().extract_json().get();
     checkAndThrowError(response);
 
-    log("Navigated " + shipSymbol + " to " + destinationSymbol + ".");
+    log(fmt::format("Navigated {} to {}.", shipSymbol, destinationSymbol));
     return NavResponse(response.at(U("data")));
 }
 
@@ -117,7 +115,7 @@ bool DataAccessLayer::deliverContract(
     const std::string &tradeSymbol,
     int unit)
 {
-    log("Delivering contract " + contractId + " by " + shipSymbol + ", " + std::to_string(unit) + "x " + tradeSymbol + "...");
+    log(fmt::format("Delivering contract {}, {}x {} by {}...", contractId, unit, tradeSymbol, shipSymbol));
 
     json::value payload;
     payload["shipSymbol"] = json::value::string(shipSymbol);
@@ -127,72 +125,67 @@ bool DataAccessLayer::deliverContract(
     http_request request(methods::POST);
     request.headers().add(U("Authorization"), U("Bearer ") + U(ACCESS_TOKEN));
     request.set_request_uri(U("/my/contracts/" + contractId + "/deliver"));
-    // request.set_body(payload);
 
     json::value response = sendRequest(request, payload);
-    // json::value response = client.request(request).get().extract_json().get();
     checkAndThrowError(response);
 
-    log("Delivered contract " + contractId + " by " + shipSymbol + ", " + std::to_string(unit) + "x " + tradeSymbol + ".");
+    log(fmt::format("Delivered contract {}, {}x {} by {}.", contractId, unit, tradeSymbol, shipSymbol));
     return true;
 }
 
 bool DataAccessLayer::dock(const std::string &shipSymbol)
 {
-    log("Docking " + shipSymbol + "...");
+    log(fmt::format("Docking {}...", shipSymbol));
 
     http_request request(methods::POST);
     request.headers().add(U("Authorization"), U("Bearer ") + U(ACCESS_TOKEN));
     request.set_request_uri(U("/my/ships/" + shipSymbol + "/dock"));
 
     json::value response = sendRequest(request);
-    // json::value response = client.request(request).get().extract_json().get();
     checkAndThrowError(response);
 
-    log("Docked " + shipSymbol + ".");
+    log(fmt::format("Docked {}.", shipSymbol));
     return true;
 }
 
 bool DataAccessLayer::orbit(const std::string &shipSymbol)
 {
-    log("Orbiting " + shipSymbol + "...");
+    log(fmt::format("Orbiting {}...", shipSymbol));
 
     http_request request(methods::POST);
     request.headers().add(U("Authorization"), U("Bearer ") + U(ACCESS_TOKEN));
     request.set_request_uri(U("/my/ships/" + shipSymbol + "/orbit"));
 
     json::value response = sendRequest(request);
-    // json::value response = client.request(request).get().extract_json().get();
     checkAndThrowError(response);
 
-    log("Orbited " + shipSymbol + ".");
+    log(fmt::format("Orbited {}.", shipSymbol));
     return true;
 }
 
 bool DataAccessLayer::refuel(const std::string &shipSymbol)
 {
-    log("Refueling " + shipSymbol + "...");
+    log(fmt::format("Refueling {}...", shipSymbol));
 
     http_request request(methods::POST);
     request.headers().add(U("Authorization"), U("Bearer ") + U(ACCESS_TOKEN));
     request.set_request_uri(U("/my/ships/" + shipSymbol + "/refuel"));
 
     json::value response = sendRequest(request);
-    // json::value response = client.request(request).get().extract_json().get();
     checkAndThrowError(response);
 
-    log("Refueled " + shipSymbol + ".");
+    log(fmt::format("Refueled {}.", shipSymbol));
     return true;
 }
 
 bool DataAccessLayer::checkAndThrowError(const json::value &response)
 {
-    log("Checking for error in response = " + response.serialize() + "...");
+    log(fmt::format("Checking for error in response = {}...", response.serialize()));
 
     if (response.has_field(U("error")))
     {
         json::value error = response.at(U("error"));
-        log("Error found in response = " + error.serialize() + ".");
+        log(fmt::format("Error found in response = {}.", error.serialize()));
 
         int errorCode = error.at(U("code")).as_integer();
         switch (errorCode)
@@ -216,20 +209,38 @@ bool DataAccessLayer::checkAndThrowError(const json::value &response)
             log("Throwing insufficient fuel error");
             throw NavigateInsufficientFuelException(error);
         }
-        log("Throwing base error");
+        log("Throwing base error", spdlog::level::critical);
         throw BaseException(error);
     }
 
-    log("No error found in response = " + response.serialize() + ".");
+    log(fmt::format("No error found in response = {}.", response.serialize()));
     return true;
 }
 
-void DataAccessLayer::log(const std::string &message)
+void DataAccessLayer::log(const std::string &message, spdlog::level::level_enum level)
 {
-    time_t curTime = std::time(NULL);
-    auto timeObject = std::localtime(&curTime);
-    std::string timeString = std::to_string(timeObject->tm_year + 1900) + "-" + std::to_string(timeObject->tm_mon + 1) + "-" + std::to_string(timeObject->tm_mday) + " " + std::to_string((timeObject->tm_hour + 8) % 24) + ":" + std::to_string(timeObject->tm_min) + ":" + std::to_string(timeObject->tm_sec);
-    std::cout << timeString << " DAL: " << message << std::endl;
+    std::string formattedMessage = fmt::format("DAL: {}", message);
+    switch (level)
+    {
+    case spdlog::level::trace:
+        spdlog::trace(formattedMessage);
+        break;
+    case spdlog::level::debug:
+        spdlog::debug(formattedMessage);
+        break;
+    case spdlog::level::info:
+        spdlog::info(formattedMessage);
+        break;
+    case spdlog::level::warn:
+        spdlog::warn(formattedMessage);
+        break;
+    case spdlog::level::err:
+        spdlog::error(formattedMessage);
+        break;
+    case spdlog::level::critical:
+        spdlog::critical(formattedMessage);
+        break;
+    }
 }
 
 json::value DataAccessLayer::sendRequest(http_request &request, const web::json::value &body)
@@ -257,11 +268,11 @@ json::value DataAccessLayer::sendRequest(http_request &request, const web::json:
             int errorCode = error.at(U("code")).as_integer();
             if (errorCode == ErrorCode::RATE_LIMITED)
             {
-                log("Rate limited response = " + response.serialize() + ".");
+                log(fmt::format("Rate limited response = {}.", response.serialize()));
                 int retrymsec = (int)(error.at(U("data")).at(U("retryAfter")).as_double() * 1000.0);
-                log("Sleeping for " + std::to_string(retrymsec) + " milliseconds...");
+                log(fmt::format("Sleeping for {} milliseconds...", retrymsec));
                 std::this_thread::sleep_for(std::chrono::milliseconds(retrymsec));
-                log("Waking up from sleep after " + std::to_string(retrymsec) + " milliseconds...");
+                log(fmt::format("Waking up from sleep after {} milliseconds...", retrymsec));
                 continue;
             }
         }

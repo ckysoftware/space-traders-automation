@@ -1,4 +1,5 @@
 // https://github.com/Microsoft/cpprestsdk/wiki/Getting-Started-Tutorial
+#include "spdlog/spdlog.h"
 
 #include <string>
 #include <iostream>
@@ -26,13 +27,17 @@ void printShip(std::vector<Ship> ships)
 }
 
 int main()
-{
-    std::cout << "***** started *****" << std::endl;
+{   
+    spdlog::set_level(spdlog::level::debug);
+    // spdlog::set_default_logger(some_other_logger);
+
+    spdlog::info("***** started *****");
 
     const std::string baseURI = "https://api.spacetraders.io/v2/";
     dal::DataAccessLayer DALInstance(baseURI);
 
-    std::cout << "***** getting ship *****" << std::endl;
+    spdlog::info("***** getting ship *****");
+
     std::vector<Ship> ships = DALInstance.getShips();
     printShip(ships);
 
@@ -44,13 +49,13 @@ int main()
         // }
 
         shipAutomators.emplace_back(ship, DALInstance);
-        std::cout << "Creating ship automator for " << ship.symbol << std::endl;
+        spdlog::info("Creating ship automator for {}", ship.symbol);
     }
 
     std::vector<std::thread> automationThreads;
     for (auto &shipAutomator : shipAutomators)
     {
-        std::cout << "Starting thread for " << shipAutomator.getShipSymbol() << std::endl;
+        spdlog::info("Starting thread for {}", shipAutomator.getShipSymbol());
         automationThreads.emplace_back(&automation::ship::ShipAutomator::start, &shipAutomator);
     }
 
@@ -62,6 +67,6 @@ int main()
         automationThread.join();
     }
 
-    std::cout << "***** ended *****" << std::endl;
+    spdlog::info("***** ended *****");
     return 0;
 }

@@ -3,6 +3,9 @@
 #include <thread>
 #include <unordered_set>
 
+#include "spdlog/spdlog.h"
+#include <fmt/core.h>
+
 #include "ship_auto.h"
 #include "../data_layer/error.h"
 
@@ -118,10 +121,11 @@ bool ShipAutomator::mine()
 {
     // return true if the cargo is full
     log("Mining...");
+
     try
     {
         ExtractResponse response = p_DALInstance->mine(p_ship->symbol);
-        log("Yield = " + response.yield.printStat() + ". CD = " + std::to_string(response.cooldownSeconds) + ". Cargo = " + response.cargo.printStat());
+        log(fmt::format("Yield = {}, CD = {}, Cargo = {}", response.yield.printStat(), response.cooldownSeconds, response.cargo.printStat()));
 
         updateCargo(response.cargo);
         if (p_ship->cargo.isFull())
@@ -159,6 +163,7 @@ bool ShipAutomator::mine()
 bool ShipAutomator::sell()
 {
     log("Selling...");
+
     try
     {
         updateCargo();
@@ -166,12 +171,12 @@ bool ShipAutomator::sell()
         {
             if (notForSale.count(item.symbol) > 0)
             {
-                log("Found not for sale item " + item.symbol + ", skipping...");
+                log(fmt::format("Found not for sale item {}, skipping...", item.symbol));
                 continue;
             }
 
             SellResponse response = p_DALInstance->sell(p_ship->symbol, item.symbol, item.units);
-            log("Sold " + std::to_string(response.units) + "x " + response.tradeSymbol + " for " + std::to_string(response.totalPrice) + " at " + std::to_string(response.pricePerUnit) + " each.");
+            log(fmt::format("Sold {}x {} for {}@{}.", response.units, response.tradeSymbol, response.totalPrice, response.pricePerUnit));
             // updateCargo(response.cargo);  // will invalidate iterators, let's see if we need to update the cargo each time later
         }
         updateCargo();
@@ -238,14 +243,14 @@ bool ShipAutomator::refuel()
 
 bool ShipAutomator::navigate()
 {
-    log("Navigating to " + targetWaypoint + "...");
+    log(fmt::format("Navigating to {}...", targetWaypoint));
     try
     {
         NavResponse response = p_DALInstance->navigate(p_ship->symbol, targetWaypoint);
         int ETA = response.nav.route.getETA();
-        log("Fuel left: " + response.fuel.printStat() + ". ETA: " + std::to_string(ETA) + " seconds.");
+        log(fmt::format("Fuel left: {}. ETA: {} seconds.", response.fuel.printStat(), ETA));
         sleep(ETA);
-        log("Navigated to " + targetWaypoint + ".");
+        log(fmt::format("Navgiated to {}.", targetWaypoint));
         return true;
     }
     catch (error::InTransitException &e)
@@ -266,7 +271,7 @@ bool ShipAutomator::navigate()
 
 bool ShipAutomator::deliverContract()
 {
-    log("Delivering contract " + contractID + "...");
+    log(fmt::format("Delivering contract {}...", contractID));
     try
     {
         updateCargo();
@@ -274,9 +279,9 @@ bool ShipAutomator::deliverContract()
         {
             if (item.symbol == contractItem)
             {
-                log("Found " + std::to_string(item.units) + "x " + contractItem + ", delivering...");
+                log(fmt::format("Delivering {}x {}...", item.units, item.symbol));
                 p_DALInstance->deliverContract(contractID, p_ship->symbol, item.symbol, item.units);
-                log("Delivered " + std::to_string(item.units) + "x " + item.symbol + " to fulfill contract " + contractID + ".");
+                log(fmt::format("Delivered {}x {}.", item.units, item.symbol));
                 // updateCargo(response.cargo);  // will invalidate iterators, let's see if we need to update the cargo each time later
             }
         }
@@ -300,17 +305,35 @@ void ShipAutomator::setTargetWaypoint(std::string waypointSymbol)
 
 void ShipAutomator::sleep(int seconds)
 {
-    log("Sleeping for " + std::to_string(seconds) + " seconds...");
+    log(fmt::format("Sleeping for {} seconds...", seconds));
     std::this_thread::sleep_for(std::chrono::seconds(seconds));
-    log("Waking up from sleep after " + std::to_string(seconds) + " seconds.");
+    log(fmt::format("Waking up from sleep after {} seconds.", seconds));
 }
 
-void ShipAutomator::log(const std::string &message)
+void ShipAutomator::log(const std::string &message, spdlog::level::level_enum level)
 {
-    time_t curTime = std::time(NULL);
-    auto timeObject = std::localtime(&curTime);
-    std::string timeString = std::to_string(timeObject->tm_year + 1900) + "-" + std::to_string(timeObject->tm_mon + 1) + "-" + std::to_string(timeObject->tm_mday) + " " + std::to_string((timeObject->tm_hour + 8) % 24) + ":" + std::to_string(timeObject->tm_min) + ":" + std::to_string(timeObject->tm_sec);
-    std::cout << timeString << " " << p_ship->symbol << ": " << message << std::endl;
+    std::string formattedMessage = fmt::format("{}: {}", p_ship->symbol, message);
+    switch (level)
+    {
+    case spdlog::level::trace:
+        spdlog::trace(formattedMessage);
+        break;
+    case spdlog::level::debug:
+        spdlog::debug(formattedMessage);
+        break;
+    case spdlog::level::info:
+        spdlog::info(formattedMessage);
+        break;
+    case spdlog::level::warn:
+        spdlog::warn(formattedMessage);
+        break;
+    case spdlog::level::err:
+        spdlog::error(formattedMessage);
+        break;
+    case spdlog::level::critical:
+        spdlog::critical(formattedMessage);
+        break;
+    }
 }
 
 void ShipAutomator::handleInTransitError(const error::InTransitException &e)

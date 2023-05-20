@@ -3,10 +3,18 @@ RUN dnf install -y cpprest-devel
 RUN dnf install -y g++
 RUN dnf install -y cmake
 RUN dnf install -y zlib-devel zlib-static
+RUN dnf install -y git
+RUN dnf install -y fmt-devel
 
 
 WORKDIR /space-traders
+# compile external library
+COPY external/ ./external/
+WORKDIR /space-traders/external/spdlog/build
+RUN cmake .. && make -j
 
+
+WORKDIR /space-traders
 COPY src/ ./src/
 COPY CMakeLists.txt .
 
