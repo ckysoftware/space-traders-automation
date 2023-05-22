@@ -1,3 +1,6 @@
+#include "spdlog/spdlog.h"
+#include <fmt/core.h>
+
 #include "schema.h"
 
 #include <iomanip>
@@ -18,15 +21,25 @@ Cargo::Cargo(json::value json)
     capacity = json.at(U("capacity")).as_integer();
     units = json.at(U("units")).as_integer();
     inventory = std::vector<CargoItem>();
+    int unitSum = 0;
     for (auto item : json.at(U("inventory")).as_array())
     {
         CargoItem inventoryItem(item);
         inventory.push_back(inventoryItem);
+        unitSum += inventoryItem.units;
+    }
+    if (units != unitSum)
+    {
+        spdlog::warn(fmt::format("Cargo: Cargo unit sum does not match. Unit={} / Sum={}", units, unitSum));
     }
 }
 
 bool Cargo::isFull()
 {
+    if (units > capacity)
+    {
+        spdlog::warn(fmt::format("Cargo: Cargo is over capacity. Unit={} / Capacity={}", units, capacity));
+    }
     return units >= capacity;
 }
 

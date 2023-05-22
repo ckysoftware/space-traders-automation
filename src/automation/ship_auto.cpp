@@ -14,10 +14,10 @@ using namespace automation::ship;
 
 // ----------------------------------------------------------------
 // Hardcoded constants for the time being
-const std::string AsteroidFieldWaypoint = "X1-ZA40-99095A";
-const std::string contractItem = "IRON_ORE";
-const std::string contractWaypoint = "X1-ZA40-15970B";
-const std::string contractID = "clhmbbth30031s60d5ai3plj9";
+const std::string AsteroidFieldWaypoint = "X1-VS75-67965Z";
+const std::string contractItem = "PLATINUM_ORE";
+const std::string contractWaypoint = "X1-VS75-70500X";
+const std::string contractID = "clhw9qowb0139s60dm28j6y4p";
 const std::unordered_set<std::string> notForSale = {"ANTIMATTER", contractItem};
 // ----------------------------------------------------------------
 
@@ -26,6 +26,8 @@ ShipAutomator::ShipAutomator(schema::Ship &ship, dal::DataAccessLayer &DALInstan
     p_ship = &ship;
     p_DALInstance = &DALInstance;
     status = TO_MINE;
+    toDeliver = false;
+    targetWaypoint = "";
 }
 
 void ShipAutomator::start()
@@ -189,6 +191,11 @@ bool ShipAutomator::sell()
     if (p_ship->cargo.isFull())
     {
         toDeliver = true;
+    } else {
+        if (toDeliver) {
+            log("toDeliver is true but cargo is not full, this should not happen.", spdlog::level::warn);
+        }
+        toDeliver = false;
     }
     return true;
 }
